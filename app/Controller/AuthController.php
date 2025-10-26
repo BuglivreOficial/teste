@@ -4,8 +4,8 @@ namespace App\Controller;
 
 use Core\SupabaseClient;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Respect\Validation\Validator as v;
 
 /**
@@ -16,6 +16,8 @@ use Respect\Validation\Validator as v;
  * - POST /register        Cria usuário (email/senha + metadata opcional)
  * - POST /reset-password  Envia link de recuperação de senha
  * - POST /profile         Retorna dados do usuário autenticado (Authorization: Bearer <token>)
+ * - GET  /auth/callback   Página de retorno após verificação de e-mail
+ * - GET  /auth/v1/verify  Alias para compatibilidade com links do Supabase
  *
  * Bibliotecas:
  * - pecee/simple-router         (roteamento)
@@ -114,7 +116,9 @@ class AuthController
                 'message' => $message,
                 'email' => $data->email ?? $email,
                 'user' => $data
-            ], 201);
+            ], 201, [
+                'Content-Type' => 'application/json'
+            ]);
         } catch (\Exception $e) {
             //return new JsonResponse([
             //    'error' => $auth->getError() ?? $e->getMessage(),
@@ -186,5 +190,16 @@ class AuthController
                 'error' => $auth->getError() ?? 'Falha ao obter perfil do usuário',
             ], 401);
         }
+    }
+
+    // Callback de verificação: renderiza uma página simples para evitar 404 após confirmação
+    public function verifyCallback(): Response
+    {
+        $request = Request::createFromGlobals();
+        $type = $request->query->get('type', 'signup');
+        $html = '<!doctype html><html><head><meta charset="utf-8"><title>Confirmação de e-mail</title></head><body style="font-family:sans-serif;padding:24px"><h2>E-mail confirmado</h2><p>Seu e-mail foi verificado ('
+            . htmlspecialchars($type, ENT_QUOTES, 'UTF-8')
+            . '). Você já pode acessar sua conta.</p></body></html>';
+        return new Response($html, 200, ['Content-Type' => 'text/html; charset=utf-8']);
     }
 }

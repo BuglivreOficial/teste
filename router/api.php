@@ -23,3 +23,7 @@ SimpleRouter::post('/admin/users/update', [AdminUserController::class, 'update']
 SimpleRouter::post('/admin/users/delete', [AdminUserController::class, 'delete']);
 SimpleRouter::post('/admin/users/ban', [AdminUserController::class, 'ban']);
 SimpleRouter::post('/admin/users/unban', [AdminUserController::class, 'unban']);
+
+// Callback de verificação de e-mail (redirecionamento do Supabase)
+SimpleRouter::get('/auth/callback', [AuthController::class, 'verifyCallback']);
+SimpleRouter::get('/auth/v1/verify', [AuthController::class, 'verifyCallback']);
