@@ -6,6 +6,7 @@ use Core\SupabaseClient;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Respect\Validation\Validator as v;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Controller de Gerenciamento de Usuários
@@ -20,9 +21,12 @@ class UserController
 {
     private SupabaseClient $client;
 
+    private Response $response;
+
     public function __construct()
     {
         $this->client = new SupabaseClient();
+        $this->response = new Response();
     }
 
     /**
@@ -127,31 +131,39 @@ class UserController
      * Gera novo access_token a partir de refresh_token.
      * Body JSON: { "refresh_token": string }
      */
-    public function refreshToken(): JsonResponse
+    public function refreshToken()
     {
         $request = Request::createFromGlobals();
         $payload = json_decode($request->getContent(), true) ?? [];
         $refreshToken = $payload['refresh_token'] ?? '';
 
         if (!v::stringType()->length(1, null)->validate($refreshToken)) {
-            return new JsonResponse(['error' => 'refresh_token é obrigatório'], 422);
+            $this->response->setContent(json_encode(['error' => 'refresh_token é obrigatório']));
+            $this->response->setStatusCode(422);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->send();
         }
 
         $auth = $this->client->getService()->createAuth();
         try {
             $auth->signInWithRefreshToken($refreshToken);
             $data = $auth->data();
-            return new JsonResponse([
+
+            $this->response->setContent(json_encode([
                 'access_token' => $data->access_token ?? null,
                 'refresh_token' => $data->refresh_token ?? null,
                 'token_type' => $data->token_type ?? 'bearer',
                 'expires_in' => $data->expires_in ?? null,
                 'user' => $data->user ?? null,
-            ], 200);
+            ]));
+            $this->response->setStatusCode(200);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->send();
         } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => $auth->getError() ?? 'Falha ao renovar token',
-            ], 401);
+            $this->response->setContent(json_encode(['error' => $auth->getError() ?? 'Falha ao renovar token']));
+            $this->response->setStatusCode(401);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->send();
         }
     }
 }

@@ -1,8 +1,11 @@
 <?php
 use Pecee\SimpleRouter\SimpleRouter;
+use Pecee\Http\Request;
 use App\Controller\AuthController;
 use App\Controller\UserController;
 use App\Controller\AdminUserController;
+use App\Controller\PageController;
+use App\Controller\AppController;
 
 // Rotas da API de autenticação
 SimpleRouter::post('/login', [AuthController::class, 'login']);
@@ -27,3 +30,30 @@ SimpleRouter::post('/admin/users/unban', [AdminUserController::class, 'unban']);
 // Callback de verificação de e-mail (redirecionamento do Supabase)
 SimpleRouter::get('/auth/callback', [AuthController::class, 'verifyCallback']);
 SimpleRouter::get('/auth/v1/verify', [AuthController::class, 'verifyCallback']);
+
+// Rotas de status do aplicativo
+SimpleRouter::get('/app/version', [AppController::class, 'version']);
+SimpleRouter::get('/app/maintenance', [AppController::class, 'maintenance']);
+
+// Rotas de páginas de erro
+SimpleRouter::get('/not-found', [PageController::class, 'notFound']);
+SimpleRouter::get('/forbidden', [PageController::class, 'forbidden']);
+
+// Tratamento de erros globais
+SimpleRouter::error(function(Request $request, \Exception $exception) {
+
+    switch($exception->getCode()) {
+        // Page not found
+        case 404:
+            SimpleRouter::response()->redirect('/not-found');
+            break;
+        // Forbidden
+        //case 403:
+        //    SimpleRouter::response()->redirect('/forbidden');
+        //    break;
+        default:
+            // Sem redirecionamento para outros erros
+            break;
+    }
+    
+});

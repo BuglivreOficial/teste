@@ -29,17 +29,19 @@ use Respect\Validation\Validator as v;
 class AuthController
 {
     private SupabaseClient $client;
+    private Response $response;
 
     public function __construct()
     {
         $this->client = new SupabaseClient();
+        $this->response = new Response();
     }
 
     /**
      * Autenticação com email e senha.
      * Body JSON: { "email": string, "password": string }
      */
-    public function login(): JsonResponse
+    public function login()
     {
         $request = Request::createFromGlobals();
         $payload = json_decode($request->getContent(), true) ?? [];
@@ -54,7 +56,12 @@ class AuthController
             $errors['password'] = 'Senha deve ter ao menos 6 caracteres';
         }
         if (!empty($errors)) {
-            return new JsonResponse(['errors' => $errors], 422);
+            $this->response->setContent(json_encode([
+                'errors' => $errors
+            ]));
+            $this->response->setStatusCode(422);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->send();
         }
 
         $auth = $this->client->getService()->createAuth();
@@ -63,17 +70,23 @@ class AuthController
             $auth->signInWithEmailAndPassword($email, $password);
             $data = $auth->data();
 
-            return new JsonResponse([
+            $this->response->setContent(json_encode([
                 'access_token' => $data->access_token ?? null,
                 'refresh_token' => $data->refresh_token ?? null,
                 'token_type' => $data->token_type ?? 'bearer',
                 'expires_in' => $data->expires_in ?? null,
-                'user' => $data->user ?? null,
-            ], 200);
+                'user' => $data->user ?? null
+            ]));
+            $this->response->setStatusCode(200);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->send();
         } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => $auth->getError() ?? 'Falha ao autenticar',
-            ], 401);
+            $this->response->setContent(json_encode([
+                'error' => $auth->getError() ?? 'Falha ao autenticar'
+            ]));
+            $this->response->setStatusCode(401);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->send();
         }
     }
 
@@ -97,7 +110,13 @@ class AuthController
             $errors['password'] = 'Senha deve ter ao menos 6 caracteres';
         }
         if (!empty($errors)) {
-            return new JsonResponse(['errors' => $errors], 422);
+            $this->response->setContent(json_encode(['errors' => $errors]));
+            $this->response->setStatusCode(422);
+            $this->response->headers->set('Content-Type', 'application/json');
+
+            $this->response->send();
+            //return;
+            exit;
         }
 
         $auth = $this->client->getService()->createAuth();
@@ -112,24 +131,23 @@ class AuthController
                 ? 'Usuário criado com sucesso (desenvolvimento - confirmação de email desabilitada)'
                 : 'Usuário criado! Um link de confirmação foi enviado por e-mail.';
 
-            return new JsonResponse([
+            $this->response->setContent(json_encode([
                 'message' => $message,
                 'email' => $data->email ?? $email,
                 'user' => $data
-            ], 201, [
-                'Content-Type' => 'application/json'
-            ]);
+            ]));
+            $this->response->setStatusCode(201);
+            $this->response->headers->set('Content-Type', 'application/json');
+
+            $this->response->send();
         } catch (\Exception $e) {
-            //return new JsonResponse([
-            //    'error' => $auth->getError() ?? $e->getMessage(),
-            //], 400);
-            $response = new Response();
-            $response->setContent(json_encode([
+            $this->response->setContent(json_encode([
                 'error' => $auth->getError() ?? $e->getMessage()
             ]));
-            $response->headers->set('Content-Type', 'application/json');
+            $this->response->setStatusCode(400);
+            $this->response->headers->set('Content-Type', 'application/json');
 
-            $response->send();
+            $this->response->send();
         }
     }
 
