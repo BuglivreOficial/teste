@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Controller de Status do Aplicativo
@@ -25,33 +26,52 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class AppController
 {
+    private Response $response;
+    public function __construct() {
+        $this->response = new Response();
+    }
     /**
      * GET /app/version
      * Retorna a versão atual do aplicativo Android.
      */
-    public function version(): JsonResponse
-    {
+    public function version()    {
         $version = $_ENV['APP_ANDROID_VERSION'] ?? null;
-        return new JsonResponse([
+        $this->response->setContent(json_encode([
             'platform' => 'android',
             'version' => $version,
-            'source' => 'env',
-        ], 200);
+            'source' => 'env'
+        ]));
+        $this->response->headers->set('Content-Type', 'application/json');
+        $this->response->setStatusCode(200);
+        $this->response->send();
     }
 
     /**
      * GET /app/maintenance
      * Retorna se o aplicativo está em manutenção e mensagem opcional.
      */
-    public function maintenance(): JsonResponse
+    public function maintenance()
     {
         $maintenance = filter_var($_ENV['APP_MAINTENANCE'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
         $message = $_ENV['APP_MAINTENANCE_MESSAGE'] ?? null;
 
-        return new JsonResponse([
+        if ($maintenance === false) {
+            $this->response->setContent(json_encode([
+                'maintenance' => $maintenance,
+                'source' => 'env'
+            ]));
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->setStatusCode(200);
+            $this->response->send();
+        }
+
+        $this->response->setContent(json_encode([
             'maintenance' => $maintenance,
             'message' => $message,
-            'source' => 'env',
-        ], 200);
+            'source' => 'env'
+        ]));
+        $this->response->headers->set('Content-Type', 'application/json');
+        $this->response->setStatusCode(200);
+        $this->response->send();
     }
 }
