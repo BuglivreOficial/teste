@@ -16,7 +16,6 @@ class MaintenanceController {
 
     public function update() {
 
-
     }
 
     public function get() {

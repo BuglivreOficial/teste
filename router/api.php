@@ -68,6 +68,6 @@ SimpleRouter::get('/app/maintenance', [AppController::class, 'maintenance']);
 
 SimpleRouter::group(['middleware' => \App\Middleware\AdminMiddleware::class], function () {
     SimpleRouter::post('/admin/maintenance', [MaintenanceController::class, 'update']);
+    SimpleRouter::get('/admin/maintenance', [MaintenanceController::class, 'get']);
 });
 
-SimpleRouter::get('/admin/maintenance', [MaintenanceController::class, 'get']);
