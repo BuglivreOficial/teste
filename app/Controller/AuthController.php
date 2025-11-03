@@ -184,7 +184,7 @@ class AuthController
      * Perfil do usuário autenticado.
      * Header: Authorization: Bearer <token>
      */
-    public function profile(): JsonResponse
+    public function profile()
     {
         $request = Request::createFromGlobals();
         $authHeader = $request->headers->get('Authorization');
@@ -202,11 +202,17 @@ class AuthController
 
         try {
             $user = $auth->getUser($token);
-            return new JsonResponse(['user' => $user], 200);
+            $this->response->setContent(json_encode(['user' => $user]));
+            $this->response->setStatusCode(200);
+            $this->response->headers->set('Content-Type', 'application/json');
+
+            $this->response->send();
         } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => $auth->getError() ?? 'Falha ao obter perfil do usuário',
-            ], 401);
+            $this->response->setContent(json_encode(['error'=> $e->getMessage()]));
+            $this->response->setStatusCode(401);
+            $this->response->headers->set('Content-Type', 'application/json');
+
+            $this->response->send();
         }
     }
 

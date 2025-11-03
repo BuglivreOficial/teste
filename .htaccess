@@ -1,4 +1,9 @@
-RewriteEngine on
+RewriteEngine On
+
+# Garante que o header Authorization seja repassado ao PHP
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
 RewriteCond %{SCRIPT_FILENAME} !-f
 RewriteCond %{SCRIPT_FILENAME} !-d
 RewriteCond %{SCRIPT_FILENAME} !-l

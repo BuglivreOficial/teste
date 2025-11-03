@@ -6,6 +6,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+use Core\SupabaseClient;
+
 /**
  * Controller de Status do Aplicativo
  *
@@ -27,8 +29,12 @@ use Symfony\Component\HttpFoundation\Response;
 class AppController
 {
     private Response $response;
+
+    private SupabaseClient $supabaseClient;
+
     public function __construct() {
         $this->response = new Response();
+        $this->supabaseClient = new SupabaseClient();
     }
     /**
      * GET /app/version
@@ -52,26 +58,26 @@ class AppController
      */
     public function maintenance()
     {
-        $maintenance = filter_var($_ENV['APP_MAINTENANCE'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
-        $message = $_ENV['APP_MAINTENANCE_MESSAGE'] ?? null;
-
-        if ($maintenance === false) {
+        $request = Request::createFromGlobals();
+        $payload = json_decode($request->getContent(), true) ?? [];
+        $package = $payload['package'] ?? '';
+        $query = $this->supabaseClient->getQueryBuilder()
+            ->from('maintenance')
+            ->select('*')
+            ->where('package', 'eq.' . $package);
+        $result = $query->execute()->getResult();
+        if (empty($result)) {
             $this->response->setContent(json_encode([
-                'maintenance' => $maintenance,
-                'source' => 'env'
+                'error' => 'Pacote não encontrado'
             ]));
+            $this->response->setStatusCode(404);
             $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setStatusCode(200);
             $this->response->send();
+            return;
         }
-
-        $this->response->setContent(json_encode([
-            'maintenance' => $maintenance,
-            'message' => $message,
-            'source' => 'env'
-        ]));
-        $this->response->headers->set('Content-Type', 'application/json');
+        $this->response->setContent(json_encode($result[0]));
         $this->response->setStatusCode(200);
+        $this->response->headers->set('Content-Type', 'application/json');
         $this->response->send();
     }
 }

@@ -7,6 +7,9 @@ use App\Controller\AdminUserController;
 use App\Controller\PageController;
 use App\Controller\AppController;
 
+
+use App\Controller\Admin\MaintenanceController;
+
 // Rotas da API de autenticação
 SimpleRouter::post('/login', [AuthController::class, 'login']);
 SimpleRouter::post('/register', [AuthController::class, 'register']);
@@ -33,8 +36,6 @@ SimpleRouter::get('/auth/v1/verify', [AuthController::class, 'verifyCallback']);
 
 // Rotas de status do aplicativo
 SimpleRouter::get('/app/version', [AppController::class, 'version']);
-SimpleRouter::get('/app/maintenance', [AppController::class, 'maintenance']);
-
 // Rotas de páginas de erro
 SimpleRouter::get('/not-found', [PageController::class, 'notFound']);
 SimpleRouter::get('/forbidden', [PageController::class, 'forbidden']);
@@ -57,3 +58,16 @@ SimpleRouter::error(function(Request $request, \Exception $exception) {
     }
     
 });
+
+
+// Rotas de manutenção
+// Protegidas por middleware de administrador (definidas abaixo no grupo)
+
+SimpleRouter::get('/app/maintenance', [AppController::class, 'maintenance']);
+
+
+SimpleRouter::group(['middleware' => \App\Middleware\AdminMiddleware::class], function () {
+    SimpleRouter::post('/admin/maintenance', [MaintenanceController::class, 'update']);
+});
+
+SimpleRouter::get('/admin/maintenance', [MaintenanceController::class, 'get']);

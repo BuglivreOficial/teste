@@ -3,6 +3,7 @@
 namespace Core;
 
 use PHPSupabase\Service;
+use PHPSupabase\QueryBuilder;
 
 /**
  * Cliente Supabase centralizado
@@ -32,5 +33,13 @@ class SupabaseClient
     public function getService(): Service
     {
         return $this->service;
+    }
+
+    /**
+     * Retorna a instância de QueryBuilder para uso em Auth/Database.
+     */
+    public function getQueryBuilder(): QueryBuilder
+    {
+        return $this->service->initializeQueryBuilder();
     }
 }
